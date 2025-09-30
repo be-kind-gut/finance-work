@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+  <meta charset="UTF-8">
+  <title>My Enhanced Finance App</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.5/dist/framer-motion.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { 
+      margin: 0; 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%);
+    }
+    .font-inter { font-family: 'Inter', sans-serif; }
+    .victory-animation {
+      animation: victoryPulse 2s ease-in-out infinite;
+    }
+    @keyframes victoryPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Entrance Video -->
+  <video id="introVideo" playsinline>
+    <source src="file:///C:/Users/yamen/OneDrive/Desktop/New%20folder/it%20is%20working.mp4" type="video/mp4">
+  </video>
+
+  <!-- Audio -->
+  <audio id="introSound" src="file:///C:/Users/yamen/OneDrive/Desktop/New%20folder/audio.m4a" type="audio/mp4"></audio>
+
+  <!-- Start Button -->
+  <div id="startOverlay">
+    <button id="startBtn">▶ Start</button>
+  </div>
+
+  <!-- Skip Button -->
+  <button id="skipBtn" style="display:none;">Skip</button>
+
+  <!-- Game Content (initially hidden) -->
+  <div id="gameContent" style="display:none;">
+    <h1>Welcome to the Game</h1>
+  </div>
+
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      background-color: black;
+    }
+
+    #introVideo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 10;
+      display: none; /* hidden until start */
+    }
+
+    #skipBtn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 20;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #startOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 30;
+    }
+
+    #startBtn {
+      font-size: 24px;
+      padding: 15px 30px;
+      cursor: pointer;
+    }
+  </style>
+
+  <script>
+    const video = document.getElementById('introVideo');
+    const sound = document.getElementById('introSound');
+    const gameContent = document.getElementById('gameContent');
+    const skipBtn = document.getElementById('skipBtn');
+    const startOverlay = document.getElementById('startOverlay');
+    const startBtn = document.getElementById('startBtn');
+
+    // Start button: play video + audio together
+    startBtn.addEventListener('click', () => {
+      startOverlay.style.display = 'none'; // hide overlay
+      video.style.display = 'block';       // show video
+      video.currentTime = 0;
+      sound.currentTime = 0;
+      video.play();
+      sound.play();
+      skipBtn.style.display = 'block';     // show skip
+    });
+
+    // When the video ends, hide it and show the game
+    video.addEventListener('ended', () => {
+      video.style.display = 'none';
+      skipBtn.style.display = 'none';
+      gameContent.style.display = 'block';
+    });
+
+    // Skip button functionality
+    skipBtn.addEventListener('click', () => {
+      video.pause();
+      sound.pause();
+      video.style.display = 'none';
+      skipBtn.style.display = 'none';
+      gameContent.style.display = 'block';
+    });
+  </script>
+
+</body>
+
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { motion, AnimatePresence } = Motion;
+
+    // Sample products data
+    function sampleProducts() {
+      return [
+        { id: 1, name: "Coffee", price: 3, cost: 1, stock: 10, sales: 0 },
+        { id: 2, name: "Pastry", price: 4, cost: 2, stock: 8, sales: 0 },
+        { id: 3, name: "Sandwich", price: 8, cost: 4, stock: 5, sales: 0 },
+        { id: 4, name: "Soda", price: 2, cost: 1, stock: 15, sales: 0 },
+        { id: 5, name: "Candy", price: 1, cost: 0.5, stock: 20, sales: 0 }
+      ];
+    }
+
+    // Format number function
+    function formatNumber(num) {
+      return new Intl.NumberFormat('en-US').format(num);
+    }
+
+    // Victory Modal Component
+    function VictoryModal({ isOpen, onClose, totalIncome, onNewGame }) {
+      if (!isOpen) return null;
+
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
+            className="bg-gradient-to-br from-yellow-400/20 to-orange-600/20 rounded-2xl p-8 border-2 border-yellow-500/50 max-w-md mx-4 text-center victory-animation"
+          >
+            <div className="text-6xl mb-4">🏆</div>
+            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 mb-4">
+              CONGRATULATIONS!
+            </h2>
+            <p className="text-xl text-gray-200 mb-2">You've reached your goal!</p>
+            <p className="text-lg text-yellow-400 mb-6">
+              Total Income: ${formatNumber(totalIncome)}
+            </p>
+            <div className="text-gray-300 mb-6">
+              🎉 You've successfully built a profitable business empire! 🎉
+            </div>
+            <div className="flex gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onClose}
+                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg font-semibold"
+              >
+                Continue Playing
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onNewGame}
+                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-semibold"
+              >
+                New Game
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      );
+    }
+
+    // Dashboard Pane Component
+    function DashboardPane({ totalIncome, totalExpenses, balance, taskProgress, TASK_GOAL, products, stores, totalInventory, incomes, expenses, storeIncome }) {
+      const totalStores = stores.length;
+      const totalStoreIncome = stores.reduce((sum, store) => sum + (store.totalEarned || 0), 0);
+
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-4 gap-6">
+            <div className="bg-gradient-to-br from-green-600/20 to-emerald-600/20 rounded-xl p-4 border border-green-500/30">
+              <div className="text-green-400 text-sm mb-2">Total Income</div>
+              <div className="text-2xl font-bold text-green-300">${formatNumber(totalIncome)}</div>
+            </div>
+            <div className="bg-gradient-to-br from-red-600/20 to-rose-600/20 rounded-xl p-4 border border-red-500/30">
+              <div className="text-red-400 text-sm mb-2">Total Expenses</div>
+              <div className="text-2xl font-bold text-red-300">${formatNumber(totalExpenses)}</div>
+            </div>
+            <div className={`bg-gradient-to-br ${balance >= 0 ? 'from-blue-600/20 to-cyan-600/20 border-blue-500/30' : 'from-rose-600/20 to-red-600/20 border-rose-500/30'} rounded-xl p-4 border`}>
+              <div className={`${balance >= 0 ? 'text-blue-400' : 'text-rose-400'} text-sm mb-2`}>Balance</div>
+              <div className={`text-2xl font-bold ${balance >= 0 ? 'text-cyan-300' : 'text-red-300'}`}>${formatNumber(balance)}</div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-xl p-4 border border-purple-500/30">
+              <div className="text-purple-400 text-sm mb-2">Store Income</div>
+              <div className="text-2xl font-bold text-purple-300">${formatNumber(storeIncome)}</div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-6">
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-4 border border-gray-600/50">
+              <h3 className="text-sm font-semibold text-purple-400 mb-3">Task Progress</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Earn ${formatNumber(TASK_GOAL)}</span>
+                  <span>{Math.round(taskProgress * 100)}%</span>
+                </div>
+                <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${taskProgress * 100}%` }}
+                    transition={{ duration: 1 }}
+                    className={`h-2 rounded-full ${
+                      taskProgress >= 1 
+                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
+                        : 'bg-gradient-to-r from-purple-500 to-pink-500'
+                    }`}
+                  />
+                </div>
+                {taskProgress >= 1 && (
+                  <div className="text-center text-yellow-400 font-semibold text-sm">
+                    🎉 GOAL ACHIEVED! 🎉
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-4 border border-gray-600/50">
+              <h3 className="text-sm font-semibold text-cyan-400 mb-3">Business Empire</h3>
+              <div className="text-xs text-gray-300 space-y-2">
+                <div className="flex justify-between">
+                  <span>Total Stores:</span>
+                  <span className="text-yellow-400 font-semibold">{totalStores}</span>
+                </div>
+                {totalStores > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Combined Income Rate:</span>
+                      <span className="text-green-400">
+                        ${formatNumber(stores.reduce((sum, store) => sum + store.incomeRate, 0))}/min
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Monthly Rent Total:</span>
+                      <span className="text-red-400">
+                        ${formatNumber(stores.reduce((sum, store) => sum + store.monthlyRent, 0))}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between">
+                  <span>Product Inventory:</span>
+                  <span className="text-blue-400">{totalInventory} units</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Store Overview */}
+          {totalStores > 0 && (
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-4 border border-gray-600/50">
+              <h3 className="text-sm font-semibold text-orange-400 mb-3">Store Portfolio</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {stores.map((store, index) => (
+                  <div key={store.id} className="bg-gray-800/30 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">
+                        {store.type === 'small' && '🏪'}
+                        {store.type === 'medium' && '🏬'}
+                        {store.type === 'large' && '🏢'}
+                      </span>
+                      <div>
+                        <div className="text-sm font-semibold text-gray-200 capitalize">{store.type}</div>
+                        <div className="text-xs text-gray-400">{store.location}</div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-green-400">
+                      +${formatNumber(store.incomeRate)}/min
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Store Pane Component
+    function StorePane({ stores, rentStore, balance }) {
+      const storeOptions = [
+        { type: 'small', rent: 1200, capacity: 50, location: "Downtown Mall", incomeRate: 5 },
+        { type: 'medium', rent: 2500, capacity: 150, location: "Business District", incomeRate: 12 },
+        { type: 'large', rent: 4500, capacity: 300, location: "Premium Shopping Center", incomeRate: 25 },
+        { type: 'mega', rent: 8000, capacity: 500, location: "Metropolitan Plaza", incomeRate: 45 },
+        { type: 'luxury', rent: 15000, capacity: 800, location: "Elite Shopping Complex", incomeRate: 80 }
+      ];
+
+      return (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 mb-6">
+            Store Management - Build Your Empire
+          </h2>
+          
+          {/* Current Stores */}
+          {stores.length > 0 && (
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-600/50">
+              <h3 className="text-lg font-bold text-gray-200 mb-4">Your Stores ({stores.length})</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {stores.map((store, index) => (
+                  <motion.div
+                    key={store.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-3xl">
+                        {store.type === 'small' && '🏪'}
+                        {store.type === 'medium' && '🏬'}
+                        {store.type === 'large' && '🏢'}
+                        {store.type === 'mega' && '🏬'}
+                        {store.type === 'luxury' && '🏢'}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-200 capitalize">{store.type} Store</h4>
+                        <p className="text-sm text-gray-400">{store.location}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Income:</span>
+                        <span className="text-green-400">${formatNumber(store.incomeRate)}/min</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Rent:</span>
+                        <span className="text-red-400">${formatNumber(store.monthlyRent)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Capacity:</span>
+                        <span className="text-cyan-400">{store.capacity}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Since:</span>
+                        <span className="text-yellow-400">{new Date(store.rentDate).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Available Stores */}
+          <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-600/50">
+            <h3 className="text-lg font-bold text-gray-200 mb-4">Available Store Types</h3>
+            <div className="grid grid-cols-3 gap-6">
+              {storeOptions.map(option => (
+                <motion.div
+                  key={option.type}
+                  whileHover={{ y: -5 }}
+                  className="bg-gray-800/30 rounded-lg p-6 border border-gray-700/50 text-center"
+                >
+                  <div className="text-4xl mb-4">
+                    {option.type === 'small' && '🏪'}
+                    {option.type === 'medium' && '🏬'}
+                    {option.type === 'large' && '🏢'}
+                    {option.type === 'mega' && '🏬'}
+                    {option.type === 'luxury' && '🏢'}
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-200 mb-2 capitalize">{option.type} Store</h3>
+                  <p className="text-sm text-gray-400 mb-4">{option.location}</p>
+                  <div className="space-y-2 text-sm text-gray-300 mb-6">
+                    <div className="flex justify-between">
+                      <span>Capacity:</span>
+                      <span className="text-cyan-400">{option.capacity} units</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Monthly Rent:</span>
+                      <span className="text-red-400">${formatNumber(option.rent)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Income Rate:</span>
+                      <span className="text-green-400">${formatNumber(option.incomeRate)}/min</span>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => rentStore(option)}
+                    disabled={balance < option.rent}
+                    className={`w-full py-3 rounded-lg font-semibold ${
+                      balance >= option.rent
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500'
+                        : 'bg-gradient-to-r from-gray-600 to-gray-700 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    {balance >= option.rent ? 'Rent Store' : 'Insufficient Funds'}
+                  </motion.button>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Income Pane Component
+    function IncomePane({ incomes, addIncome, newIncome, setNewIncome, removeIncome }) {
+      return (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 mb-6">
+            Income Management
+          </h2>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-600/50">
+              <h3 className="text-lg font-bold text-gray-200 mb-4">Add Income</h3>
+              <form onSubmit={addIncome} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Source</label>
+                  <select
+                    value={newIncome.source}
+                    onChange={(e) => setNewIncome({...newIncome, source: e.target.value})}
+                    className="w-full p-3 rounded-lg bg-gray-700/50 border border-gray-600 text-gray-200"
+                  >
+                    <option value="Manual">Manual Entry</option>
+                    <option value="Investment">Investment</option>
+                    <option value="Dividends">Dividends</option>
+                    <option value="Interest">Interest</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Amount ($)</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={newIncome.amount}
+                    onChange={(e) => setNewIncome({...newIncome, amount: e.target.value})}
+                    className="w-full p-3 rounded-lg bg-gray-700/50 border border-gray-600 text-gray-200"
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="submit"
+                  className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg font-semibold"
+                >
+                  Add Income
+                </motion.button>
+              </form>
+            </div>
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-600/50">
+              <h3 className="text-lg font-bold text-gray-200 mb-4">Income History</h3>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {incomes.map(income => (
+                  <motion.div
+                    key={income.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg"
+                  >
+                    <div>
+                      <div className="font-medium text-gray-200">{income.source}</div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(income.date).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-green-400 font-semibold">
+                        +${formatNumber(income.amount)}
+                      </span>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => removeIncome(income.id)}
+                        className="p-1 text-red-400 hover:bg-red-400/10 rounded-full"
+                      >
+                        🗑️
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                ))}
+                {incomes.length === 0 && (
+                  <div className="text-center text-gray-500 py-4">No income records yet</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Products Pane Component
+    function ProductsPane({ products, sellProduct, restockProduct }) {
+      return (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 mb-6">
+            Product Management
+          </h2>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-600/50">
+              <h3 className="text-lg font-bold text-gray-200 mb-4">Available Products</h3>
+              <div className="grid grid-cols-5 gap-4">
+                {products.map(product => (
+                  <motion.div
+                    key={product.id}
+                    whileHover={{ y: -5 }}
+                    className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50"
+                  >
+                    <div className="text-center mb-3">
+                      <div className="text-3xl mb-2">
+                        {product.name === "Coffee" && "☕"}
+                        {product.name === "Pastry" && "🥐"}
+                        {product.name === "Sandwich" && "🥪"}
+                        {product.name === "Soda" && "🥤"}
+                        {product.name === "Candy" && "🍬"}
+                      </div>
+                      <h4 className="font-semibold text-gray-200">{product.name}</h4>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Price:</span>
+                        <span className="text-green-400">${formatNumber(product.price)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Cost:</span>
+                        <span className="text-red-400">${formatNumber(product.cost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Stock:</span>
+                        <span className={product.stock > 0 ? 'text-cyan-400' : 'text-red-400'}>
+                          {product.stock} units
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Sold:</span>
+                        <span className="text-yellow-400">{product.sales}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => sellProduct(product.id)}
+                        disabled={product.stock <= 0}
+                        className={`flex-1 py-2 rounded-lg font-semibold text-xs ${
+                          product.stock > 0
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600'
+                            : 'bg-gray-700 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        Sell
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => restockProduct(product.id)}
+                        className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg font-semibold text-xs"
+                      >
+                        Restock
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main Finance App Component
+    function FinanceApp() {
+      const [activeTab, setActiveTab] = useState("dashboard");
+      const [stores, setStores] = useState([]);
+      const [incomes, setIncomes] = useState([]);
+      const [expenses, setExpenses] = useState([]);
+      const [products, setProducts] = useState(sampleProducts());
+      const [newIncome, setNewIncome] = useState({ source: "Manual", amount: "" });
+      const [storeIncome, setStoreIncome] = useState(0);
+      const [lastIncomeTime, setLastIncomeTime] = useState(Date.now());
+      const [showVictoryModal, setShowVictoryModal] = useState(false);
+      const [hasWon, setHasWon] = useState(false);
+      
+      const TASK_GOAL = 50000;
+      const totalIncome = incomes.reduce((s, i) => s + Number(i.amount), 0) + storeIncome;
+      const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+      const balance = totalIncome - totalExpenses;
+      const taskProgress = Math.min(1, totalIncome / TASK_GOAL);
+      const totalInventory = products.reduce((sum, p) => sum + p.stock, 0);
+
+      // Victory check effect
+      useEffect(() => {
+        if (totalIncome >= TASK_GOAL && !hasWon) {
+          setHasWon(true);
+          setShowVictoryModal(true);
+        }
+      }, [totalIncome, hasWon]);
+
+      // Store income generation effect
+      useEffect(() => {
+        if (stores.length > 0) {
+          const interval = setInterval(() => {
+            const now = Date.now();
+            const elapsedMinutes = (now - lastIncomeTime) / 60000;
+            const totalIncomeRate = stores.reduce((sum, store) => sum + store.incomeRate, 0);
+            const incomeGenerated = totalIncomeRate * elapsedMinutes;
+            
+            setStoreIncome(prev => prev + incomeGenerated);
+            setLastIncomeTime(now);
+          }, 10000); // Update every 10 seconds
+          
+          return () => clearInterval(interval);
+        }
+      }, [stores, lastIncomeTime]);
+
+      function rentStore(storeOption) {
+        if (balance < storeOption.rent) {
+          alert("Insufficient funds for store rent!");
+          return;
+        }
+        
+        const newStore = {
+          id: Date.now(),
+          type: storeOption.type,
+          monthlyRent: storeOption.rent,
+          capacity: storeOption.capacity,
+          location: storeOption.location,
+          incomeRate: storeOption.incomeRate,
+          rentDate: new Date().toISOString(),
+          totalEarned: 0
+        };
+        
+       const rentExpense = {
+  id: Date.now(),
+  category: "Store Rent",
+  amount: storeOption.rent,
+  note: `First month rent for ${storeOption.type} store at $${storeOption.rent}`,
+  date: new Date().toISOString(),
+  recurring: true
+};
+
+        
+        setExpenses(prev => [rentExpense, ...prev]);
+        setStores(prev => [...prev, newStore]);
+      }
+
+      function addIncome(e) {
+        e?.preventDefault();
+        if (!Number(newIncome.amount)) return;
+        const entry = { 
+          id: Date.now(), 
+          source: newIncome.source || 'Manual', 
+          amount: Number(newIncome.amount), 
+          date: new Date().toISOString() 
+        };
+        setIncomes(prev => [entry, ...prev]);
+        setNewIncome({ source: "Manual", amount: "" });
+      }
+
+      function removeIncome(id) { 
+        setIncomes(prev => prev.filter(i => i.id !== id));
+      }
+
+      function sellProduct(productId) {
+        setProducts(prev => prev.map(product => {
+          if (product.id === productId && product.stock > 0) {
+            const saleIncome = {
+              id: Date.now(),
+              source: `Product Sale: ${product.name}`,
+              amount: product.price,
+              date: new Date().toISOString()
+            };
+            
+            setIncomes(prev => [saleIncome, ...prev]);
+            
+            return {
+              ...product,
+              stock: product.stock - 1,
+              sales: product.sales + 1
+            };
+          }
+          return product;
+        }));
+      }
+
+      function restockProduct(productId) {
+        setProducts(prev => prev.map(product => {
+          if (product.id === productId) {
+            const restockCost = product.cost * 10; // Restock 10 units
+            if (balance >= restockCost) {
+              const restockExpense = {
+                id: Date.now(),
+                category: "Product Restock",
+                amount: restockCost,
+                note: `Restocked ${product.name}`,
+                date: new Date().toISOString()
+              };
+              
+              setExpenses(prev => [restockExpense, ...prev]);
+              
+              return {
+                ...product,
+                stock: product.stock + 10
+              };
+            } else {
+              alert("Insufficient funds to restock!");
+            }
+          }
+          return product;
+        }));
+      }
+
+      function handleNewGame() {
+        setStores([]);
+        setIncomes([]);
+        setExpenses([]);
+        setProducts(sampleProducts());
+        setStoreIncome(0);
+        setHasWon(false);
+        setShowVictoryModal(false);
+        setActiveTab("dashboard");
+      }
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-slate-100 p-4 font-inter">
+          <div className="max-w-7xl mx-auto">
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-t-2xl p-4 border-b border-gray-600 shadow-2xl"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-2">
+                    <div className="w-4 h-4 bg-red-500 rounded-full shadow-lg hover:bg-red-400 transition-colors cursor-pointer" />
+                    <div className="w-4 h-4 bg-yellow-500 rounded-full shadow-lg hover:bg-yellow-400 transition-colors cursor-pointer" />
+                    <div className="w-4 h-4 bg-green-500 rounded-full shadow-lg hover:bg-green-400 transition-colors cursor-pointer" />
+                  </div>
+                  <div className="h-6 w-px bg-gray-600 mx-2" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">F</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-200">FinanceOS Terminal v4.0 - Enhanced Edition</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-xs text-gray-400">
+                    {new Date().toLocaleTimeString()}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    <span className="text-xs text-green-400">Online</span>
+                  </div>
+                  {hasWon && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-yellow-400">🏆</span>
+                      <span className="text-xs text-yellow-400 font-semibold">Winner!</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-br from-gray-900 to-black rounded-b-2xl border border-gray-700 shadow-2xl overflow-hidden"
+            >
+              <div className="grid grid-cols-12 gap-0 min-h-[600px]">
+                {/* Left Sidebar */}
+                <aside className="col-span-3 bg-gradient-to-b from-gray-800 to-gray-900 border-r border-gray-700 p-6">
+                  <div className="mb-6">
+                    <div className="text-green-400 text-sm font-mono mb-2">
+                      <div>$ whoami</div>
+                      <div className="text-green-300 ml-2">business_tycoon</div>
+                    </div>
+                    {hasWon && (
+                      <div className="text-yellow-400 text-xs font-mono">
+                        <div>$ status</div>
+                        <div className="text-yellow-300 ml-2">🏆 GOAL_ACHIEVED</div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {[
+                      { id: 'dashboard', label: '📊 dashboard.exe', color: 'text-blue-400' },
+                      { id: 'store', label: `🏪 store_mgmt.exe (${stores.length})`, color: stores.length > 0 ? 'text-green-400' : 'text-red-400' },
+                      { id: 'income', label: '💰 income.exe', color: 'text-green-400' },
+                      { id: 'products', label: '📦 products.exe', color: 'text-yellow-400' },
+                    ].map((tab) => (
+                      <motion.button
+                        key={tab.id}
+                        whileHover={{ scale: 1.02 }}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`w-full text-left px-4 py-3 rounded-xl text-sm font-mono transition-all duration-200 ${
+                          activeTab === tab.id 
+                            ? 'bg-gradient-to-r from-purple-600/30 to-blue-600/30 ring-2 ring-purple-500/50 shadow-lg' 
+                            : 'hover:bg-white/5 hover:shadow-md'
+                        } ${tab.color} flex items-center gap-3`}
+                      >
+                        {tab.label}
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="mt-8 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                    <h4 className="text-xs font-semibold text-gray-400 mb-3">QUICK STATS</h4>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Stores:</span>
+                        <span className="text-cyan-400 font-semibold">{stores.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Progress:</span>
+                        <span className={`font-semibold ${taskProgress >= 1 ? 'text-yellow-400' : 'text-purple-400'}`}>
+                          {Math.round(taskProgress * 100)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Net Worth:</span>
+                        <span className={`font-semibold ${balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          ${formatNumber(Math.abs(balance))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+
+                {/* Main Content */}
+                <main className="col-span-9 p-6">
+                  <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-700/50">
+                    <div>
+                      <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+                        $ ./business_manager --mode={activeTab} {hasWon && '--status=winner'}
+                      </h1>
+                      <p className="text-gray-400 text-sm mt-2">
+                        {hasWon 
+                          ? "🎉 Congratulations! You've built a successful business empire!" 
+                          : "Advanced business simulation with real-time analytics"
+                        }
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-400 mb-1">Net Worth</div>
+                      <div className={`text-3xl font-mono font-bold ${
+                        hasWon 
+                          ? 'text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400' 
+                          : balance >= 0 
+                            ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400' 
+                            : 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-400'
+                      }`}>
+                        ${formatNumber(balance)}
+                      </div>
+                      {hasWon && (
+                        <div className="text-xs text-yellow-400 mt-1">
+                          🏆 Goal Achieved!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeTab}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="min-h-96"
+                    >
+                      {activeTab === 'dashboard' && <DashboardPane {...{totalIncome, totalExpenses, balance, taskProgress, TASK_GOAL, products, stores, totalInventory, incomes, expenses, storeIncome}} />}
+                      {activeTab === 'store' && <StorePane stores={stores} rentStore={rentStore} balance={balance} />}
+                      {activeTab === 'income' && <IncomePane {...{incomes, addIncome, newIncome, setNewIncome, removeIncome}} />}
+                      {activeTab === 'products' && <ProductsPane {...{products, sellProduct, restockProduct}} />}
+                    </motion.div>
+                  </AnimatePresence>
+                </main>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Victory Modal */}
+          <VictoryModal 
+            isOpen={showVictoryModal}
+            onClose={() => setShowVictoryModal(false)}
+            totalIncome={totalIncome}
+            onNewGame={handleNewGame}
+          />
+        </div>
+      );
+    }
+
+    // Function to launch the app
+    function sayHello() {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<FinanceApp />);
+      
+      // Hide the HTML elements
+      document.querySelector('h1').style.display = 'none';
+      document.querySelector('button').style.display = 'none';
+    }
+
+    // Auto-launch the app after a short delay
+    setTimeout(() => {
+      sayHello();
+    }, 1000);
+  </script>
+</body>
+</html>
